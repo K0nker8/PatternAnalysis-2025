@@ -2,6 +2,19 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+class LayerNorm(nn.Module):
+    def __init__(self, normalized_shape, eps=1e-6):
+        super().__init__()
+        self.eps = eps
+        self.normalized_shape = (normalized_shape, )
+    
+    def forward(self, x):
+        mean = x.mean(-1, keepdim = True)
+        var = (x - mean).pow(2).mean(-1, keepdim=True)
+        return (x - mean) / torch.sqrt(var + self.eps)
+
+
+
 
 class Block(nn.Module):
     
@@ -27,7 +40,6 @@ class Block(nn.Module):
         x = self.pwconv1(x)
         x = self.act(x)
         x = self.pwconv2(x)
-        if self.gamma is not None:
-            x = self.gamma * x
         x = x.permute(0, 3, 1, 2) # (N, H, W, C) -> (N, C, H, W)
         return x + residual
+    
