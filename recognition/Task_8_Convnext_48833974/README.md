@@ -1,8 +1,8 @@
-# ANDI Alziheimers Classifier using ConvNeXt
+# ANDI Alzheimer's Classifier using ConvNeXt
 
 ## 1. Introduction
 
-ConvNeXt is a new and updated CNN architecture that combines elements of ResNet with design features from Vision Transformers (ViTs). While more tradititonal CNN's like ResNet are efficient and scalable, ViT's are strong at dealing with larger scale datasets, and more specifc normalization/regularisation techniques. ConvNeXt provides the best of both of these architectures combining features from both approaches.
+ConvNeXt is a new and updated CNN architecture that combines elements of ResNet with design features from Vision Transformers (ViTs). While more traditional CNN's like ResNet are efficient and scalable, ViT's are strong at dealing with larger scale datasets, and more specific normalization/regularisation techniques. ConvNeXt provides the best of both of these architectures combining features from both approaches.
 
 ## 2. Model 
 
@@ -10,7 +10,7 @@ ConvNeXt is a new and updated CNN architecture that combines elements of ResNet 
 
 #### Patchify Stem:
     - Replaces standard 7*7 convolution from other CNN's to a 4*4 convolution of stride 4. This is adapted from patch embedding of ViTs
-    - Creates non-overlapping patches, increasing effeciency and performance over other CNNs
+    - Creates non-overlapping patches, increasing efficiency and performance over other CNNs
 
 #### Stagewise Architecture:
     - Four stage structure, processes progressively lower-res feature maps
@@ -20,16 +20,16 @@ ConvNeXt is a new and updated CNN architecture that combines elements of ResNet 
     - Uses GELU instead of RELU to match transformer architectures and for better performance
 
 #### Layer Normalization:
-    - Uses layer instead of batch normalization for tranformer compatibility
+    - Uses layer instead of batch normalization for transformer compatibility
 
-#### Depthwise Seperable Convolutions
+#### Depth wise Separable Convolutions
     - Makes the network deeper and wider without increasing computational cost
 
 ### 2.2 Model Architecture
 
-The following diagram demonstrates the structure of the ConvNeXt architecture. Each block can be charactrised by a depthwise convolution, layer normlaization, pointwise convoltutions and GELU activation
+The following diagram demonstrates the structure of the ConvNeXt architecture. Each block can be characterized by a depth wise convolution, layer normalization, pointwise convolutions and GELU activation
 
-![alt text](ConvNeXt-structure.webp)
+![Structure of the model](ConvNeXt-structure.webp)
 
 #### Stem
     - Takes a standard 224*224*3 image as input and convolves using a 4*4 kernel and stride 4
@@ -37,14 +37,14 @@ The following diagram demonstrates the structure of the ConvNeXt architecture. E
 
 #### Stage 1
     - Applies Depthwise Convolution on the 56×56×96 feature map from the stem
-    - Applies layer Normilisation to stabilize training
+    - Applies layer Normalization to stabilize training
     - Extracts low-level textures
 
 #### Stage 2-3
-    - Downsamples further to 28*28*192 and then to 14*14*384, getting more mid level feature deatils
+    - Downsamples further to 28*28*192 and then to 14*14*384, getting more mid level feature details
 
 #### Stage 4
-    - Fetaure extraction at 7*7*768, 
+    - Feature extraction at 7*7*768, 
     - Feature map is averaged, aggregating information across the entire image 
     - Vector is normalized and passed through a softmax function which creates class probabilities
 
@@ -53,7 +53,7 @@ The following diagram demonstrates the structure of the ConvNeXt architecture. E
 
 ## 3. Dataset
 
-This implementation of ConvNeXT uses the ANDI Alizheimers data set of brain MRI data. This data has been processed into greyscale and has been sorted into train and test data based on AD (non-healthy) and NC (healthy) data. Each image has been rezised into the default format for ConvNeXt (224*224) and has then been converted to a torch tensor. In order to improve the qulaity of model training, images in the dataset have been randomly flipped, rotated, and translated to esnure that the model is robust and will not overfit the training dataset. The train data was further partitioned into a smaller validate set for hyperparameter tuning.
+This implementation of ConvNeXT uses the ANDI Alzheimer's data set of brain MRI data. This data has been processed into greyscale and has been sorted into train and test data based on AD (non-healthy) and NC (healthy) data. Each image has been resized into the default format for ConvNeXt (224*224) and has then been converted to a torch tensor. In order to improve the quality of model training, images in the dataset have been randomly flipped, rotated, and translated to ensure that the model is robust and will not overfit the training dataset. The train data was further partitioned into a smaller validate set for hyperparameter tuning.
 ![A sample image from the dataset](218391_78.jpeg)
 
 ## 4. Training
@@ -62,7 +62,7 @@ The model is set to train using binary class classification by sorting images in
 ### 4.1 Parameters of training
 
 #### Learning rate
-    - Reflects the rate at which model ajusts hyperparameters in response to error or varied training data.
+    - Reflects the rate at which model adjusts hyperparameters in response to error or varied training data.
 
 #### Weight decay
     - Reduces tendency towards overfitting by penalizing large weights. Is regulated using AdamW in order to optimize for varied losses
@@ -80,12 +80,25 @@ The model is set to train using binary class classification by sorting images in
     - Measures the closeness of a models predictions to that of the correct classification
 
 ### 4.3 Training Results
-The following graphs plot each epoch against the accuracy and cross entropy loss respectively of each of the train and validation data sets. As is shown, the validation dataset tends to
+The following graphs plot each epoch against the accuracy and cross entropy loss respectively of each of the train and validation data sets. As is shown, the validation dataset tends to trail behind the training set in terms of increasing accuracy and reducing loss as the epochs progress. This makes sense as the model is the most familiar with the train set. By the end of training cross entropy loss stabilised at ~0.2 for both sets, while accuracy exceeded 90% for both sets. This indicates good model perfromance on these datasets and that overfitting is minimal due to the reliatively strong corrilation bertween train and validate set improvements.
+[Epochs plotted against accuracy and loss](image.png)
 
 ### 4.4 Challenges and how they were overcome
 
+#### Overfitting
+    - Early in development overfitting was a signifcant probelem for this model. This was mitigated by the use of data augmentation on the test set incluidng varitions in the data so that the model does not get to accustomed to the train set.
+
+    - Overfitting was also mitiagted by adjusting hyperparamaters such as weight drop and learning rate
+
+#### Model size
+    - ConvNeXt offers a range of model sizes, and it was assumed early in devlelopment that the smallest models possible ( tiny or nano) would be the most effective due to only 2 classification factors and a small dataset. It was later discovered that increasing this was decraesing the accuracy of the model unessasarily due to decreased model depth. Beacuse of this, ConvNeXt Small was used instead. 
+
 ## Predict
-Trains loads and evaluates the ConnvNeXt model with the given training data, and then evaluates the test set for training and validation loss.
+Provides function for saving and testing the model on the test set. During training, the current best model is saved each time validation accuracy is imporved. Then after training, the best model is tested against the test set to get a final accuracy score based on test accuracy. The current best acheived result on the test set is 74.67%. This indicates a decent result, but a notable drop in accuracy compared to the train and validation accuracies achived on this model. It was also found that the model has a slight bias towards classifying AD samples as NC in the test set, which is a weakness of this implmentation.
+![Test set results](image-1.png)
+
+
+
 
 
 
