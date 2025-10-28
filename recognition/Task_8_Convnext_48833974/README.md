@@ -55,7 +55,7 @@ Feature map is averaged, aggregating information across the entire image.
 Vector is normalized and passed through a softmax function which creates class probabilities.
 
 #### Stage 5
-Classification of image given logit probailities to sort into AD and NC.
+Classification of image given logit probabilities to sort into AD and NC.
 
 ## 3. Dataset
 
@@ -66,9 +66,9 @@ This implementation of ConvNeXT uses the ANDI Alzheimer's data set of brain MRI 
 **Figure 2:** A sample input image from the dataset
 
 ## 4. Training
-The model is set to train using binary class classification by sorting images into healthy and unhealthy data. Each iteration of training is a forward pass of the model, where images are processes to create class preidictions. Predictions are then compared to the ground truth labels. 
+The model is set to train using binary class classification by sorting images into healthy and unhealthy data. Each iteration of training is a forward pass of the model, where images are processes to create class predictions. Predictions are then compared to the ground truth labels. 
 
-For training, the data is split 85:15, where the 15% is data that is randomly partitioned as a validate set. This is used to tune paramaters during training to ensure that the models training is balanced.
+For training, the data is split 85:15, where the 15% is data that is randomly partitioned as a validate set. This is used to tune parameters during training to ensure that the models training is balanced.
 
 Training parameters and regularization techniques have been optimized to ensure robust convergence and reduce overfitting.
 
@@ -78,7 +78,7 @@ Training parameters and regularization techniques have been optimized to ensure 
 Reflects the rate at which model adjusts hyperparameters in response to error or varied training data.
 
 #### Weight decay
-Reduces tendency towards overfitting by penalizing large weights. Is regulated using AdamW in order to optimize for varied losses, reducing the likelyhood of overfitting.
+Reduces tendency towards overfitting by penalizing large weights. Is regulated using AdamW in order to optimize for varied losses, reducing the likelihood of overfitting.
 
 #### Batch size
 Number of samples processed together during a single iteration.
@@ -89,7 +89,7 @@ To enhance generalization, training images are augmented through techniques like
 ### 4.2 Indicators of accuracy
 
 #### Accuracy
-Indicates the proportion of correctly sorted images compared to the train/validate classifications. Seperaet values of accuracy for the test and validation sets are maintained.
+Indicates the proportion of correctly sorted images compared to the train/validate classifications. Separate values of accuracy for the test and validation sets are maintained.
 
 #### Cross-entropy loss
 Calculated as BCE=−N1​Σi=1N​(yi​.log(pi​)+(1−yi​)log(1−pi​)), where N is no. samples, yi is true label and pi is predcited probability of class 1 for sample i
