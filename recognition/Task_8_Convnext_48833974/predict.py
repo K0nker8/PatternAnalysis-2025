@@ -10,6 +10,27 @@ from dataset import ADNI
 
 @torch.no_grad()
 def test_model(model, loader, criterion, device, save_path):
+    """
+    Evaluate the best-performing model on the test dataset.
+
+    Loads the model's saved weights from disk and runs inference on the test data.
+    Reports average test loss, classification accuracy, a detailed classification report,
+    and displays a confusion matrix for visual performance evaluation.
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+        The trained neural network model to be tested.
+    loader : torch.utils.data.DataLoader
+        DataLoader providing the test dataset in batches.
+    criterion : torch.nn.Module
+        The loss function used to calculate prediction error on the test data.
+    device : torch.device
+        Device to which tensors are moved (e.g., "cuda" or "cpu").
+    save_path : str
+        File path to the saved model weights to be loaded before testing.
+    """
+    
     print("\n🧪 Testing best model...")
     model.load_state_dict(torch.load(save_path, map_location=device))
     model.eval()
@@ -40,7 +61,12 @@ def test_model(model, loader, criterion, device, save_path):
     ConfusionMatrixDisplay(cm, display_labels=["AD", "NC"]).plot(cmap="Blues", values_format="d")
     plt.title("Confusion Matrix"); plt.show()
 
+
+
 def main():
+    """
+    Runs testing of the model against the test set and graphs results as a matrix
+    """
     save_path = "best_model.pth"
     criterion = nn.CrossEntropyLoss()
     batch_size = 32

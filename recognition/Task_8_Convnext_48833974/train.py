@@ -12,6 +12,36 @@ from dataset import ADNI
 
 
 def train_one_epoch(model, loader, criterion, optimizer, device, scaler=None):
+    
+    """
+    Perform one epoch of model training.
+
+    This function executes a single training epoch, performing forward and backward
+    passes for each batch of images and updating model parameters accordingly.
+    It also tracks the average training loss and classification accuracy.
+
+    Params
+    
+    model : torch.nn.Module
+        The neural network model to be trained.
+    loader : torch.utils.data.DataLoader
+        DataLoader providing the training data in batches.
+    criterion : torch.nn.Module
+        The loss function used to compute the difference between predictions and targets.
+    optimizer : torch.optim.Optimizer
+        The optimization algorithm responsible for updating model weights.
+    device : torch.device
+        Device to which tensors are moved (e.g., "cuda" or "cpu").
+    scaler : torch.cuda.amp.GradScaler, optional
+        Mixed precision scaler for automatic loss scaling during AMP training (default: None).
+
+    Returns
+    
+    tuple of (float, float)
+        - Average training loss over the epoch.
+        - Training accuracy as a percentage.
+    """
+    
     model.train()
     running_loss, correct, total = 0.0, 0, 0
 
@@ -40,6 +70,29 @@ def train_one_epoch(model, loader, criterion, optimizer, device, scaler=None):
 
 @torch.no_grad()
 def evaluate(model, loader, criterion, device):
+    """
+    Evaluate the model on a validation or test dataset.
+
+    Runs inference without gradient computation to assess model performance.
+    Calculates the average loss and accuracy over the entire dataset.
+
+    Params
+
+    model : torch.nn.Module
+        The trained neural network model to be evaluated.
+    loader : torch.utils.data.DataLoader
+        DataLoader providing the validation or test data in batches.
+    criterion : torch.nn.Module
+        The loss function used to compute validation or test loss.
+    device : torch.device
+        Device to which tensors are moved (e.g., "cuda" or "cpu").
+
+    Returns
+    
+    tuple of (float, float)
+        - Average evaluation loss.
+        - Evaluation accuracy as a percentage.
+    """
     model.eval()
     running_loss, correct, total = 0.0, 0, 0
 
@@ -55,7 +108,11 @@ def evaluate(model, loader, criterion, device):
 
     return running_loss / total, 100. * correct / total
 
+
 def main():
+    """
+    Runs training and plots the results
+    """
 
     train_dir = r"C:\Users\zacmc\Documents\UQ\COMP3710\Project 2\PatternAnalysis-2025\recognition\Task_8_Convnext_48833974\AD_NC\train"
     

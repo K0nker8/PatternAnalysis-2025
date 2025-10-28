@@ -4,6 +4,15 @@ import torch.nn.functional as F
 from timm.models.layers import DropPath, trunc_normal_
 
 class LayerNorm(nn.Module):
+    """
+    Applies Layer Normalization over inputs for either
+    'channels_last' or 'channels_first' tensor formats.
+
+    Args:
+        normalized_shape (int): Number of features/channels in the input tensor.
+        eps (float): A value added to the denominator for numerical stability. Default: 1e-6.
+        data_format (str): Either 'channels_last' (default) or 'channels_first'.
+    """
     def __init__(self, normalized_shape, eps=1e-6, data_format="channels_last"):
         super().__init__()
         self.weight = nn.Parameter(torch.ones(normalized_shape))
@@ -15,6 +24,14 @@ class LayerNorm(nn.Module):
         self.normalized_shape = (normalized_shape, )
     
     def forward(self, x):
+        """
+        Forward pass for layer normalization.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (N, C, H, W) or (N, H, W, C).
+        Returns:
+            torch.Tensor: Normalized tensor of same shape as input.
+        """
         if self.data_format == "channels_last":
             return F.layer_norm(x, self.normalized_shape, self.weight, self.bias, self.eps)
         elif self.data_format == "channels_first":
@@ -45,6 +62,15 @@ class Block(nn.Module):
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
         
     def forward(self, x):
+        """
+        Forward pass through the ConvNeXt block.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (N, C, H, W).
+        Returns:
+            torch.Tensor: Output tensor after depthwise conv, normalization,
+                          MLP, scaling, and residual addition.
+        """
         input = x
         x = self.dwconv(x)
         x = x.permute(0, 2, 3, 1)
@@ -108,11 +134,20 @@ class ConvNeXt(nn.Module):
         self.head.bias.data.mul_(head_init_scale)
 
     def _init_weights(self, m):
+        """Initialize Conv and Linear layers with truncated normal distribution."""
         if isinstance(m, (nn.Conv2d, nn.Linear)):
             trunc_normal_(m.weight, std=.02)
             nn.init.constant_(m.bias,0)
     
     def forward(self, x):
+        """
+        Forward pass through the ConvNeXt model.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (N, C, H, W).
+        Returns:
+            torch.Tensor: Logits of shape (N, num_classes).
+        """
         for i in range(4):
             x = self.downsample_layers[i](x)
             x = self.stages[i](x)
