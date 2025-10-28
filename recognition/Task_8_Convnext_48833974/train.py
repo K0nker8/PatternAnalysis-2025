@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms
-from convnext import ConvNeXt
+from modules import modules
 from timm import create_model
 from tqdm import *
 import glob

@@ -93,9 +93,36 @@ The following graphs plot each epoch against the accuracy and cross entropy loss
 #### Model size
     - ConvNeXt offers a range of model sizes, and it was assumed early in devlelopment that the smallest models possible ( tiny or nano) would be the most effective due to only 2 classification factors and a small dataset. It was later discovered that increasing this was decraesing the accuracy of the model unessasarily due to decreased model depth. Beacuse of this, ConvNeXt Small was used instead. 
 
-## Predict
-Provides function for saving and testing the model on the test set. During training, the current best model is saved each time validation accuracy is imporved. Then after training, the best model is tested against the test set to get a final accuracy score based on test accuracy. The current best acheived result on the test set is 74.67%. This indicates a decent result, but a notable drop in accuracy compared to the train and validation accuracies achived on this model. It was also found that the model has a slight bias towards classifying AD samples as NC in the test set, which is a weakness of this implmentation.
+## 5. Predict
+Provides function for saving and testing the model on the test set. During training, the current best model is saved each time validation accuracy is imporved. Then after training, the best model is tested against the test set to get a final accuracy score based on test accuracy. The current best acheived result on the test set is 74.67%. This indicates a decent result, but a notable drop in accuracy compared to the train and validation accuracies achived on this model. It was also found that the model has a slight bias towards classifying AD samples as NC in the test set, which is a weakness of this implmentation. Therfore it can be concluded that a weakness of this model in its current implementation is its struggles with generalizability.
 ![Test set results](image-1.png)
+
+## 6. Dependencies
+pip install Python 3.x
+pip install torch
+pip install torchvision
+pip install timm
+pip install numpy
+pip install PIL
+pip install tqdm
+pip install glob
+pip install matplotlib
+pip install sklearn
+
+## 7. References
+
+
+GeeksforGeeks. (2024, January 3). What Is CrossEntropy Loss Function? GeeksforGeeks. https://www.geeksforgeeks.org/machine-learning/what-is-cross-entropy-loss-function/
+
+GeeksforGeeks. (2025, July 14). ConvNeXt. GeeksforGeeks. https://www.geeksforgeeks.org/computer-vision/convnext/
+
+‌Liu, Z., Mao, H., Wu, C.-Y., Feichtenhofer, C., Darrell, T., Xie, S., Facebook, A., & Research. (n.d.). A ConvNet for the 2020s. https://arxiv.org/pdf/2201.03545
+
+‌
+
+
+
+
 
 
 
