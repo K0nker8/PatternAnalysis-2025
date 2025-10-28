@@ -1,52 +1,19 @@
-import time
 import os
+import time
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from PIL import Image
-from torch.utils.data import DataLoader, Dataset
-from torchvision import datasets, transforms
-from modules import modules
-from timm import create_model
-from tqdm import *
-import glob
-from torchvision.transforms import v2 as T
-from torch.utils.data import random_split
+from torch.utils.data import DataLoader, random_split
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
 
-class ADNI(Dataset):
-    def __init__(self, root_dir, transform=None):
-        self.transform = transform
-        self.samples = []
-        self.class_to_idx = {"AD": 0, "NC": 1}
+from modules import ConvNeXt         
+from dataset import ADNI  
 
-        # Traverse each class folder (AD and NC)
-        for cls_name, cls_idx in self.class_to_idx.items():
-            cls_folder = os.path.join(root_dir, cls_name)
-            if not os.path.isdir(cls_folder):
-                print(f"⚠️ Warning: {cls_folder} not found.")
-                continue
-            # Collect all jpg/jpeg/png files
-            for ext in ('*.jpg', '*.jpeg', '*.png'):
-                self.samples.extend([
-                    (fp, cls_idx) for fp in glob.glob(os.path.join(cls_folder, ext))
-                ])
-
-        if len(self.samples) == 0:
-            raise RuntimeError(f"No image files found in {root_dir}! "
-                               f"Check your directory path or extensions.")
-
-    def __len__(self):
-        return len(self.samples)
-
-    def __getitem__(self, idx):
-        fpath, label = self.samples[idx]
-        img = Image.open(fpath).convert('L')  # convert to grayscale
-        if self.transform:
-            img = self.transform(img)
-        return img, label
 
 train_dir = "/content/AD_NC/AD_NC/train"
 test_dir  = "/content/AD_NC/AD_NC/test"
+save_path = "best_model.pth"
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if not torch.cuda.is_available():
@@ -56,28 +23,10 @@ batch_size = 32
 num_epochs = 35
 learning_rate = 3e-4
 weight_decay = 1e-3
+patience = 5
 
-transform_train = T.Compose([
-    T.Grayscale(num_output_channels=3),
-    T.Resize((224, 224)),
-    T.RandomResizedCrop(224, scale=(0.8, 1.0)),
-    T.RandomHorizontalFlip(),
-    T.RandomRotation(15),
-    T.RandomAffine(degrees=0, translate=(0.1,0.1)),  # small translations
-    T.ToTensor(),
-    T.Normalize(mean=[0.485,0.456,0.406], std=[0.229,0.224,0.225]),
-])
-
-transform_test = T.Compose([
-    T.Grayscale(num_output_channels=3),  # <-- same here for consistency
-    T.Resize((224, 224)),
-    T.ToTensor(),
-    T.Normalize(mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225]),
-])
-
-full_train_dataset = ADNI(train_dir, transform=transform_train)
-test_dataset  = ADNI(test_dir, transform=transform_test)
+full_train_dataset = ADNI(train_dir, mode='train')
+test_dataset  = ADNI(test_dir, mode='test')
 
 train_size = int(0.85 * len(full_train_dataset))
 val_size = len(full_train_dataset) - train_size
@@ -91,13 +40,15 @@ print(f"✅ Train samples: {len(train_dataset)}")
 print(f"✅ Val samples:   {len(val_dataset)}")
 print(f"✅ Test samples:  {len(test_dataset)}")
 
-model = create_model(
-    'convnext_nano',
-    pretrained=False,
-    in_chans=3,
-    num_classes=2
-)
-model = model.to(device)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+model = ConvNeXt(
+    in_chans=1,
+    num_classes=2,
+    depths=[3, 3, 9, 3],   
+    dims=[96, 192, 384, 768],
+    drop_path_rate=0.1
+).to(device)
 
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
@@ -149,6 +100,8 @@ def evaluate(model, loader, criterion, device):
     return running_loss / total, 100. * correct / total
 
 print("\n🚀 Starting training...\n")
+train_losses, val_losses, train_accs, val_accs = [], [], [], []
+best_val_acc, epochs_no_improve = 0.0, 0
 start_time = time.time()
 
 for epoch in range(num_epochs):
@@ -156,12 +109,38 @@ for epoch in range(num_epochs):
     val_loss, val_acc = evaluate(model, val_loader, criterion, device)
     scheduler.step()
 
+    train_losses.append(train_loss)
+    val_losses.append(val_loss)
+    train_accs.append(train_acc)
+    val_accs.append(val_acc)
+
     print(f"Epoch [{epoch+1}/{num_epochs}] "
           f"| Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}% "
           f"| Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.2f}%")
+    
+    if val_acc > best_val_acc:
+        best_val_acc = val_acc
+        epochs_no_improve = 0
+        torch.save(model.state_dict(), save_path)
+        print("💾 Best model saved!")
+    else:
+        epochs_no_improve += 1
+        if epochs_no_improve >= patience:
+            print(f"⏹ Early stopping at epoch {epoch+1}")
+            break
 
-end_time = time.time()
-elapsed = end_time - start_time
-print(f"\n✅ Training complete in {elapsed := end_time - start_time:.2f}s ({elapsed/60:.1f} min)")
+print(f"\n✅ Training complete in {(time.time()-start_time)/60:.1f} min")
+epochs = range(1, len(train_losses) + 1)
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+plt.plot(epochs, train_losses, label="Train Loss")
+plt.plot(epochs, val_losses, label="Val Loss")
+plt.xlabel("Epoch"); plt.ylabel("Loss"); plt.legend(); plt.grid(True)
+plt.subplot(1, 2, 2)
+plt.plot(epochs, train_accs, label="Train Acc")
+plt.plot(epochs, val_accs, label="Val Acc")
+plt.xlabel("Epoch"); plt.ylabel("Accuracy (%)"); plt.legend(); plt.grid(True)
+plt.tight_layout(); plt.show()
+
 
 

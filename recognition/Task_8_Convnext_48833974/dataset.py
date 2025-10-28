@@ -1,4 +1,3 @@
-# dataset.py
 import os
 import glob
 from PIL import Image

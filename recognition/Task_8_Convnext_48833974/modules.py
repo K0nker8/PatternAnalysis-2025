@@ -117,10 +117,7 @@ class ConvNeXt(nn.Module):
         x = self.head(x)
         return x
 
-model = ConvNeXt(in_chans=1, num_classes=2)
-x = torch.randn(4, 1, 224, 224)
-y = model(x)
-print(y.shape)  # should be (4, 2)
+
 
 
 
