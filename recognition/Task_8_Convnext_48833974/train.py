@@ -89,7 +89,7 @@ def main():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    model = ConvNeXt().to(device)
+    model = ConvNeXt(in_chans=3).to(device)
         
 
     criterion = nn.CrossEntropyLoss()

@@ -101,7 +101,6 @@ Provides function for saving and testing the model on the test set. During train
 pip install Python 3.x
 pip install torch
 pip install torchvision
-pip install timm
 pip install numpy
 pip install PIL
 pip install tqdm
