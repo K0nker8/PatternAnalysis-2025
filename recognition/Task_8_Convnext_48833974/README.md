@@ -81,7 +81,8 @@ The model is set to train using binary class classification by sorting images in
 
 ### 4.3 Training Results
 The following graphs plot each epoch against the accuracy and cross entropy loss respectively of each of the train and validation data sets. As is shown, the validation dataset tends to trail behind the training set in terms of increasing accuracy and reducing loss as the epochs progress. This makes sense as the model is the most familiar with the train set. By the end of training cross entropy loss stabilised at ~0.2 for both sets, while accuracy exceeded 90% for both sets. This indicates good model perfromance on these datasets and that overfitting is minimal due to the reliatively strong corrilation bertween train and validate set improvements.
-[Epochs plotted against accuracy and loss](image.png)
+
+![Epochs plotted against accuracy and loss](image-1.png)
 
 ### 4.4 Challenges and how they were overcome
 
@@ -94,8 +95,9 @@ The following graphs plot each epoch against the accuracy and cross entropy loss
     - ConvNeXt offers a range of model sizes, and it was assumed early in devlelopment that the smallest models possible ( tiny or nano) would be the most effective due to only 2 classification factors and a small dataset. It was later discovered that increasing this was decraesing the accuracy of the model unessasarily due to decreased model depth. Beacuse of this, ConvNeXt Small was used instead. 
 
 ## 5. Predict
-Provides function for saving and testing the model on the test set. During training, the current best model is saved each time validation accuracy is imporved. Then after training, the best model is tested against the test set to get a final accuracy score based on test accuracy. The current best acheived result on the test set is 74.67%. This indicates a decent result, but a notable drop in accuracy compared to the train and validation accuracies achived on this model. It was also found that the model has a slight bias towards classifying AD samples as NC in the test set, which is a weakness of this implmentation. Therfore it can be concluded that a weakness of this model in its current implementation is its struggles with generalizability.
-![Test set results](image-1.png)
+Provides function for saving and testing the model on the test set. During training, the current best model is saved each time validation accuracy is imporved. Then after training, the best model is tested against the test set to get a final accuracy score based on test accuracy. The current best acheived result on the test set is 74.10%. This indicates a decent result, but a notable drop in accuracy compared to the train and validation accuracies achived on this model. It was also found that the model has a slight bias towards classifying AD samples as NC in the test set, which is a weakness of this implmentation. Therfore it can be concluded that a weakness of this model in its current implementation is its struggles with generalizability.
+
+![Test set results](image-2.png)
 
 ## 6. Dependencies
 pip install Python 3.x
