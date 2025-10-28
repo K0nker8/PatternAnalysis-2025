@@ -55,42 +55,10 @@ def evaluate(model, loader, criterion, device):
 
     return running_loss / total, 100. * correct / total
 
-@torch.no_grad()
-def test_model(model, loader, criterion, device, save_path):
-    print("\n🧪 Testing best model...")
-    model.load_state_dict(torch.load(save_path, map_location=device))
-    model.eval()
-
-    all_preds, all_labels = [], []
-    total_loss, correct, total = 0.0, 0, 0
-
-    for images, labels in tqdm(loader, desc="Testing", leave=False):
-        images, labels = images.to(device), labels.to(device)
-        outputs = model(images)
-        loss = criterion(outputs, labels)
-        total_loss += loss.item() * images.size(0)
-
-        _, preds = outputs.max(1)
-        total += labels.size(0)
-        correct += preds.eq(labels).sum().item()
-
-        all_preds.extend(preds.cpu().numpy())
-        all_labels.extend(labels.cpu().numpy())
-
-    avg_loss = total_loss / total
-    acc = 100. * correct / total
-    print(f"\n✅ Test Loss: {avg_loss:.4f}, Test Accuracy: {acc:.2f}%")
-    print("\n📊 Classification Report:")
-    print(classification_report(all_labels, all_preds, digits=4))
-
-    cm = confusion_matrix(all_labels, all_preds)
-    ConfusionMatrixDisplay(cm, display_labels=["AD", "NC"]).plot(cmap="Blues", values_format="d")
-    plt.title("Confusion Matrix"); plt.show()
-
 def main():
 
     train_dir = r"C:\Users\zacmc\Documents\UQ\COMP3710\Project 2\PatternAnalysis-2025\recognition\Task_8_Convnext_48833974\AD_NC\train"
-    test_dir  = r"C:\Users\zacmc\Documents\UQ\COMP3710\Project 2\PatternAnalysis-2025\recognition\Task_8_Convnext_48833974\AD_NC\test"
+    
 
     save_path = "best_model.pth"
 
@@ -105,7 +73,7 @@ def main():
     patience = 5
 
     full_train_dataset = ADNI(train_dir, mode='train')
-    test_dataset  = ADNI(test_dir, mode='test')
+    
 
     train_size = int(0.85 * len(full_train_dataset))
     val_size = len(full_train_dataset) - train_size
@@ -113,21 +81,16 @@ def main():
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
     val_loader   = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
-    test_loader  = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
+    
 
     print(f"✅ Train samples: {len(train_dataset)}")
     print(f"✅ Val samples:   {len(val_dataset)}")
-    print(f"✅ Test samples:  {len(test_dataset)}")
+    
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    model = ConvNeXt(
-        in_chans=1,
-        num_classes=2,
-        depths=[3, 3, 9, 3],   
-        dims=[96, 192, 384, 768],
-        drop_path_rate=0.1
-    ).to(device)
+    model = ConvNeXt().to(device)
+        
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
@@ -178,7 +141,7 @@ def main():
     plt.xlabel("Epoch"); plt.ylabel("Accuracy (%)"); plt.legend(); plt.grid(True)
     plt.tight_layout(); plt.show()
 
-    test_model(model, test_loader, criterion, device, save_path)
+    
 
 if __name__ == "__main__":
     import torch.multiprocessing
