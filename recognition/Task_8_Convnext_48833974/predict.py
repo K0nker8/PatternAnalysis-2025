@@ -49,7 +49,7 @@ def main():
     if not torch.cuda.is_available():
         print("⚠️ CUDA not found — running on CPU")
 
-    model = ConvNeXt().to(device)
+    model = ConvNeXt(in_chans=3).to(device)
     
     test_dir  = r"C:\Users\zacmc\Documents\UQ\COMP3710\Project 2\PatternAnalysis-2025\recognition\Task_8_Convnext_48833974\AD_NC\test"
     test_dataset  = ADNI(test_dir, mode='test')
