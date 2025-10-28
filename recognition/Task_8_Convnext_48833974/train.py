@@ -11,50 +11,6 @@ from modules import ConvNeXt
 from dataset import ADNI  
 
 
-train_dir = "/content/AD_NC/AD_NC/train"
-test_dir  = "/content/AD_NC/AD_NC/test"
-save_path = "best_model.pth"
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-if not torch.cuda.is_available():
-    print("⚠️ CUDA not found — running on CPU")
-
-batch_size = 32
-num_epochs = 35
-learning_rate = 3e-4
-weight_decay = 1e-3
-patience = 5
-
-full_train_dataset = ADNI(train_dir, mode='train')
-test_dataset  = ADNI(test_dir, mode='test')
-
-train_size = int(0.85 * len(full_train_dataset))
-val_size = len(full_train_dataset) - train_size
-train_dataset, val_dataset = random_split(full_train_dataset, [train_size, val_size])
-
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
-val_loader   = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
-test_loader  = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
-
-print(f"✅ Train samples: {len(train_dataset)}")
-print(f"✅ Val samples:   {len(val_dataset)}")
-print(f"✅ Test samples:  {len(test_dataset)}")
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-model = ConvNeXt(
-    in_chans=1,
-    num_classes=2,
-    depths=[3, 3, 9, 3],   
-    dims=[96, 192, 384, 768],
-    drop_path_rate=0.1
-).to(device)
-
-criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs, eta_min=1e-6)
-scaler = torch.cuda.amp.GradScaler() if torch.cuda.is_available() else None
-
 def train_one_epoch(model, loader, criterion, optimizer, device, scaler=None):
     model.train()
     running_loss, correct, total = 0.0, 0, 0
@@ -99,48 +55,141 @@ def evaluate(model, loader, criterion, device):
 
     return running_loss / total, 100. * correct / total
 
-print("\n🚀 Starting training...\n")
-train_losses, val_losses, train_accs, val_accs = [], [], [], []
-best_val_acc, epochs_no_improve = 0.0, 0
-start_time = time.time()
+@torch.no_grad()
+def test_model(model, loader, criterion, device, save_path):
+    print("\n🧪 Testing best model...")
+    model.load_state_dict(torch.load(save_path, map_location=device))
+    model.eval()
 
-for epoch in range(num_epochs):
-    train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, device, scaler)
-    val_loss, val_acc = evaluate(model, val_loader, criterion, device)
-    scheduler.step()
+    all_preds, all_labels = [], []
+    total_loss, correct, total = 0.0, 0, 0
 
-    train_losses.append(train_loss)
-    val_losses.append(val_loss)
-    train_accs.append(train_acc)
-    val_accs.append(val_acc)
+    for images, labels in tqdm(loader, desc="Testing", leave=False):
+        images, labels = images.to(device), labels.to(device)
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+        total_loss += loss.item() * images.size(0)
 
-    print(f"Epoch [{epoch+1}/{num_epochs}] "
-          f"| Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}% "
-          f"| Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.2f}%")
-    
-    if val_acc > best_val_acc:
-        best_val_acc = val_acc
-        epochs_no_improve = 0
-        torch.save(model.state_dict(), save_path)
-        print("💾 Best model saved!")
-    else:
-        epochs_no_improve += 1
-        if epochs_no_improve >= patience:
-            print(f"⏹ Early stopping at epoch {epoch+1}")
-            break
+        _, preds = outputs.max(1)
+        total += labels.size(0)
+        correct += preds.eq(labels).sum().item()
 
-print(f"\n✅ Training complete in {(time.time()-start_time)/60:.1f} min")
-epochs = range(1, len(train_losses) + 1)
-plt.figure(figsize=(12, 5))
-plt.subplot(1, 2, 1)
-plt.plot(epochs, train_losses, label="Train Loss")
-plt.plot(epochs, val_losses, label="Val Loss")
-plt.xlabel("Epoch"); plt.ylabel("Loss"); plt.legend(); plt.grid(True)
-plt.subplot(1, 2, 2)
-plt.plot(epochs, train_accs, label="Train Acc")
-plt.plot(epochs, val_accs, label="Val Acc")
-plt.xlabel("Epoch"); plt.ylabel("Accuracy (%)"); plt.legend(); plt.grid(True)
-plt.tight_layout(); plt.show()
+        all_preds.extend(preds.cpu().numpy())
+        all_labels.extend(labels.cpu().numpy())
+
+    avg_loss = total_loss / total
+    acc = 100. * correct / total
+    print(f"\n✅ Test Loss: {avg_loss:.4f}, Test Accuracy: {acc:.2f}%")
+    print("\n📊 Classification Report:")
+    print(classification_report(all_labels, all_preds, digits=4))
+
+    cm = confusion_matrix(all_labels, all_preds)
+    ConfusionMatrixDisplay(cm, display_labels=["AD", "NC"]).plot(cmap="Blues", values_format="d")
+    plt.title("Confusion Matrix"); plt.show()
+
+def main():
+
+    train_dir = r"C:\Users\zacmc\Documents\UQ\COMP3710\Project 2\PatternAnalysis-2025\recognition\Task_8_Convnext_48833974\AD_NC\train"
+    test_dir  = r"C:\Users\zacmc\Documents\UQ\COMP3710\Project 2\PatternAnalysis-2025\recognition\Task_8_Convnext_48833974\AD_NC\test"
+
+    save_path = "best_model.pth"
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if not torch.cuda.is_available():
+        print("⚠️ CUDA not found — running on CPU")
+
+    batch_size = 32
+    num_epochs = 35
+    learning_rate = 3e-4
+    weight_decay = 1e-3
+    patience = 5
+
+    full_train_dataset = ADNI(train_dir, mode='train')
+    test_dataset  = ADNI(test_dir, mode='test')
+
+    train_size = int(0.85 * len(full_train_dataset))
+    val_size = len(full_train_dataset) - train_size
+    train_dataset, val_dataset = random_split(full_train_dataset, [train_size, val_size])
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
+    val_loader   = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
+    test_loader  = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
+
+    print(f"✅ Train samples: {len(train_dataset)}")
+    print(f"✅ Val samples:   {len(val_dataset)}")
+    print(f"✅ Test samples:  {len(test_dataset)}")
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    model = ConvNeXt(
+        in_chans=1,
+        num_classes=2,
+        depths=[3, 3, 9, 3],   
+        dims=[96, 192, 384, 768],
+        drop_path_rate=0.1
+    ).to(device)
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs, eta_min=1e-6)
+    scaler = torch.cuda.amp.GradScaler() if torch.cuda.is_available() else None
+
+
+    print("\n🚀 Starting training...\n")
+    train_losses, val_losses, train_accs, val_accs = [], [], [], []
+    best_val_acc, epochs_no_improve = 0.0, 0
+    start_time = time.time()
+
+    for epoch in range(num_epochs):
+        train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, device, scaler)
+        val_loss, val_acc = evaluate(model, val_loader, criterion, device)
+        scheduler.step()
+
+        train_losses.append(train_loss)
+        val_losses.append(val_loss)
+        train_accs.append(train_acc)
+        val_accs.append(val_acc)
+
+        print(f"Epoch [{epoch+1}/{num_epochs}] "
+            f"| Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}% "
+            f"| Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.2f}%")
+        
+        if val_acc > best_val_acc:
+            best_val_acc = val_acc
+            epochs_no_improve = 0
+            torch.save(model.state_dict(), save_path)
+            print("💾 Best model saved!")
+        else:
+            epochs_no_improve += 1
+            if epochs_no_improve >= patience:
+                print(f"⏹ Early stopping at epoch {epoch+1}")
+                break
+
+    print(f"\n✅ Training complete in {(time.time()-start_time)/60:.1f} min")
+    epochs = range(1, len(train_losses) + 1)
+    plt.figure(figsize=(12, 5))
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs, train_losses, label="Train Loss")
+    plt.plot(epochs, val_losses, label="Val Loss")
+    plt.xlabel("Epoch"); plt.ylabel("Loss"); plt.legend(); plt.grid(True)
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs, train_accs, label="Train Acc")
+    plt.plot(epochs, val_accs, label="Val Acc")
+    plt.xlabel("Epoch"); plt.ylabel("Accuracy (%)"); plt.legend(); plt.grid(True)
+    plt.tight_layout(); plt.show()
+
+    test_model(model, test_loader, criterion, device, save_path)
+
+if __name__ == "__main__":
+    import torch.multiprocessing
+    torch.multiprocessing.freeze_support()
+    main()
+
+
+
+
+
+
 
 
 
