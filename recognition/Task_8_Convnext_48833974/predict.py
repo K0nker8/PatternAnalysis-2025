@@ -68,11 +68,11 @@ if __name__ == "__main__":
     """
     
     criterion = nn.CrossEntropyLoss()
-    batch_size = 4
+    batch_size = 32
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if not torch.cuda.is_available():
-        print("⚠️ CUDA not found — running on CPU")
+        print("CUDA not found — running on CPU")
 
     model = ConvNeXt(in_chans=3).to(device)
     BASE_DIR = os.path.dirname(__file__)

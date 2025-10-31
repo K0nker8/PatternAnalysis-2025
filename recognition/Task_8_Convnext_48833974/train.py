@@ -116,7 +116,7 @@ if __name__ == "__main__":
     save_path = os.path.join(BASE_DIR, "best_model.pth")
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    batch_size, num_epochs, lr, wd, patience = 4, 2, 3e-4, 1e-3, 5
+    batch_size, num_epochs, lr, wd, patience = 32, 35, 3e-4, 1e-3, 5
 
     full_train_dataset = ADNI(train_dir, mode='train')
     train_size = int(0.85 * len(full_train_dataset))
