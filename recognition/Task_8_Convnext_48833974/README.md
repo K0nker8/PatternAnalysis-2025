@@ -2,6 +2,8 @@
 
 ## 1. Introduction
 
+Disclaimer: All data was trained and tested as a google colab file. This implementation is almost identical, but has been adapted to run locally assuming the AD_NC dataset files are in this directory. The only other change is seperating out the implementation into their correct files to ensure the correct file structure was used.
+
 ConvNeXt is a new and updated CNN architecture that combines elements of ResNet with design features from Vision Transformers (ViTs). While more traditional CNN's like ResNet are efficient and scalable, ViT's are strong at dealing with larger scale datasets, and more specific normalization/regularisation techniques. ConvNeXt provides the best of both of these architectures combining features from both approaches.
 
 ## 2. Model 
@@ -110,9 +112,9 @@ The following graphs plot each epoch against the accuracy and cross entropy loss
 #### Overfitting
 Early in development overfitting was a signifcant probelem for this model. This was mitigated by the use of data augmentation on the test set incluidng varitions in the data so that the model does not get to accustomed to the train set.
 
-A dropout of data was introduced to reduce overfitting trends. This reduced the rate of accuracy imporvement, but resulted in a slight increase to generalizability 
+A dropout of data was introduced to reduce overfitting trends. This reduced the rate of accuracy improvement, but resulted in a slight increase to generalizability. 
 
-Overfitting was also mitiagted by adjusting hyperparamaters such as weight drop and learning rate
+Overfitting was also mitiagted by adjusting hyperparamaters such as weight drop and learning rate.
 
 
 
@@ -139,7 +141,7 @@ False Positives (FP): NC misclassified as AD
 
 False Negatives (FN): AD misclassified as NC
 
-This is shown above along with overall accuracy as a heat based distribution above.
+This is shown above along with overall accuracy as a heat based distribution above. As is shown, the ratio of incorrect results for healthy and non healthy is very similar, indicating no significant bias towards overpredicting AD or NC. Further recall and precision are very similar results, indicating a well balanced training model.
 
 
 ## 6. Dependencies
