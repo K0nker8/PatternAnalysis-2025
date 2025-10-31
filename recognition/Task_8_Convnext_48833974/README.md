@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-Disclaimer: All data was trained and tested as a Google Colab file. This implementation is almost identical, but has been adapted to run locally assuming the AD_NC dataset files are in this directory. The only other change is separating out the implementation into their correct files to ensure the correct file structure was used.
+Disclaimer: All data was trained and tested as a google colab file. This implementation is almost identical, but has been adapted to run locally assuming the AD_NC dataset files are in this directory. The only other change is separating out the implementation into their correct files to ensure the correct file structure was used.
 
 ConvNeXt is a new and updated CNN architecture that combines elements of ResNet with design features from Vision Transformers (ViTs). While more traditional CNN's like ResNet are efficient and scalable, ViT's are strong at dealing with larger scale datasets, and more specific normalization/regularisation techniques. ConvNeXt provides the best of both of these architectures combining features from both approaches.
 
@@ -40,8 +40,8 @@ The following diagram illustrates the overall structure of the ConvNeXt architec
 ### 2.3 Architecture components
 
 #### Stem
-Takes a standard 224*224*3 image as RGB input (from greyscale MRI) and convolves using a 4*4 kernel and stride 4.
-The output is a 56×56×96 feature map, where each pixel represents a learned embedding of a 4×4 region of the image.
+Takes a standard 224 * 224 * 3 image as RGB input (from greyscale MRI) and convolves using a 4*4 kernel and stride 4.
+The output is a 56 * 56 * 96 feature map, where each pixel represents a learned embedding of a 4 * 4 region of the image.
 
 #### Stage 1
 Applies Depthwise Convolution on the 56×56×96 feature map from the stem.
@@ -49,10 +49,10 @@ Applies layer Normalization to stabilize training.
 Extracts low-level textures.
 
 #### Stage 2-3
-Downsamples further to 28*28*192 and then to 14*14*384, getting more mid level feature details.
+Downsamples further to 28 * 28 * 192 and then to 14 * 14 * 384, getting more mid level feature details.
 
 #### Stage 4
-Feature extraction at 7*7*768. 
+Feature extraction at 7 * 7 * 768. 
 Feature map is averaged, aggregating information across the entire image. 
 Vector is normalized and passed through a softmax function which creates class probabilities.
 
@@ -61,9 +61,9 @@ Classification of image given logit probabilities to sort into AD and NC.
 
 ## 3. Dataset
 
-This implementation of ConvNeXT uses the ANDI Alzheimer's data set of brain MRI data. There are around 27k samples that are used by the model for training/testing purposes. This data has been processed into greyscale and has been sorted into train and test data based on AD (non-healthy) and NC (healthy) data. By default the format of input into the ConvNeXt model is 3 channel rgb, so this is what each image has been converted to, replicating greyscale intensity over three channels. 
+This implementation of ConvNeXT uses the ANDI Alzheimer's data set of brain MRI data. There are around 27k samples that are used by the model for training/testing purposes. This data has been processed into greyscale and has been sorted into train and test data based on AD (non-healthy) and NC (healthy) data. By default the format of input into the ConvNeXt model is 3 channel RGB, so this is what each image has been converted to, replicating greyscale intensity over three channels. 
 
-Each image has been resized into the default format for ConvNeXt (224*224) and has then been converted to a torch tensor. In order to improve the quality of model training, images in the dataset have been augmented by randomly flipping, rotating, and translating to ensure that the model is robust and will not overfit the training dataset. The train data was further partitioned into a smaller validate set for hyperparameter tuning. 
+Each image has been resized into the default format for ConvNeXt (224*224) and has then been converted to a torch tensor. In order to improve the quality of model training, images in the dataset have been augmented by randomly flipping, rotating, and translating, and resizing to ensure that the model is robust and will not overfit the training dataset. The train data was further partitioned into a smaller validate set for hyperparameter tuning. 
 
 ![A sample image from the dataset](218391_78.jpeg)
 
@@ -124,7 +124,7 @@ Overfitting was also mitiagted by adjusting hyperparamaters such as weight drop 
 ConvNeXt offers a range of model sizes, and it was assumed early in devlelopment that the smallest models possible ( tiny or nano) would be the most effective due to only 2 classification factors and a small dataset. It was later discovered that increasing this was decraesing the accuracy of the model unessasarily due to decreased model depth. Beacuse of this, ConvNeXt Small parameters were used instead. 
 
 ## 5. Predict
-Provides function for saving and testing the model on the test set. During training, the current best model is saved each time validation accuracy is imporved. Then after training, the best model is tested against the test set to get a final accuracy score based on test accuracy. The current best acheived result on the test set is 74.10%. This indicates a decent result, but a notable drop in accuracy compared to the train and validation accuracies achived on this model. Therfore it can be concluded that a weakness of this model in its current implementation is that it struggles with generalizability.
+Provides function for saving and testing the model on the test set. During training, the current best model is saved each time validation accuracy is imporved. Then after training, the best model is tested against the test set to get a final accuracy score based on test accuracy. The current best acheived result on the test set is 74.10%. This indicates a decent result, but a notable drop in accuracy compared to the train and validation accuracies achived on this model. It was also found that the model has a slight bias towards classifying AD samples as NC in the test set, which is a weakness of this implmentation. Therfore it can be concluded that a weakness of this model in its current implementation is its struggles with generalizability.
 
 ### 5.1 Confusion Matrix
 
